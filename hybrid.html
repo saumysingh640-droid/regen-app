@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Hybrid Regen Motor</title>
+<style>
+body {background:#0b1020;color:white;text-align:center;}
+button {padding:10px;margin:5px;border-radius:8px;}
+</style>
+</head>
+
+<body>
+
+<h2>Hybrid Motor System</h2>
+
+<h3>Voltage: <span id="v">0</span> V</h3>
+<h3>Speed: <span id="s">0</span></h3>
+<h3>Stage: <span id="st">1</span></h3>
+
+<input type="range" min="0" max="1023" onchange="setSpeed(this.value)">
+<br>
+
+<button onclick="motorOn()">ON</button>
+<button onclick="motorOff()">OFF</button>
+<br>
+
+<button onclick="setStage(1)">Stage 1</button>
+<button onclick="setStage(2)">Stage 2</button>
+
+<script>
+const token = "YOUR_AUTH";
+
+function setSpeed(v){
+ fetch(`https://blynk.cloud/external/api/update?token=${token}&V0=${v}`);
+}
+
+function motorOn(){
+ fetch(`https://blynk.cloud/external/api/update?token=${token}&V1=1`);
+}
+
+function motorOff(){
+ fetch(`https://blynk.cloud/external/api/update?token=${token}&V1=0`);
+}
+
+function setStage(v){
+ fetch(`https://blynk.cloud/external/api/update?token=${token}&V3=${v}`);
+}
+
+setInterval(()=>{
+ fetch(`https://blynk.cloud/external/api/get?token=${token}&V5`)
+ .then(r=>r.text()).then(d=>v.innerText=d);
+
+ fetch(`https://blynk.cloud/external/api/get?token=${token}&V6`)
+ .then(r=>r.text()).then(d=>s.innerText=d);
+
+ fetch(`https://blynk.cloud/external/api/get?token=${token}&V7`)
+ .then(r=>r.text()).then(d=>st.innerText=d);
+
+},1000);
+</script>
+
+</body>
+</html>

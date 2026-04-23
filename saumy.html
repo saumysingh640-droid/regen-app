@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hybrid Regen Motor</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+  margin:0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color:white;
+  text-align:center;
+}
+
+h2 {
+  margin-top:15px;
+}
+
+.card {
+  background:#1e293b;
+  margin:12px;
+  padding:15px;
+  border-radius:15px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+}
+
+.value {
+  font-size:22px;
+  margin:5px;
+}
+
+button {
+  padding:10px 15px;
+  margin:5px;
+  border:none;
+  border-radius:10px;
+  font-size:15px;
+  cursor:pointer;
+}
+
+.on { background:#22c55e; }
+.off { background:#ef4444; }
+.stage { background:#3b82f6; }
+
+input[type=range] {
+  width:80%;
+}
+
+</style>
+</head>
+
+<body>
+
+<h2>⚡ Hybrid Motor Control</h2>
+
+<div class="card">
+  <div class="value">Voltage: <span id="v">0</span> V</div>
+  <div class="value">Speed: <span id="s">0</span></div>
+  <div class="value">Stage: <span id="st">1</span></div>
+</div>
+
+<div class="card">
+  <input type="range" min="0" max="1023" id="slider" oninput="setSpeed(this.value)">
+  <div>Speed Set: <span id="sv">0</span></div>
+</div>
+
+<div class="card">
+  <button class="on" onclick="motorOn()">Motor ON</button>
+  <button class="off" onclick="motorOff()">Motor OFF</button>
+</div>
+
+<div class="card">
+  <button class="stage" onclick="setStage(1)">Stage 1</button>
+  <button class="stage" onclick="setStage(2)">Stage 2</button>
+</div>
+
+<div class="card">
+  <canvas id="chart"></canvas>
+</div>
+
+<script>
+
+const token = "YOUR_AUTH_TOKEN";
+
+// -------- GRAPH SETUP --------
+let voltageData = [];
+let labels = [];
+
+const ctx = document.getElementById('chart').getContext('2d');
+
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'Voltage',
+      data: voltageData,
+      borderWidth: 2,
+      tension: 0.3
+    }]
+  },
+  options: {
+    scales: {
+      x: { display:false },
+      y: { beginAtZero:true }
+    }
+  }
+});
+
+// -------- CONTROL FUNCTIONS --------
+function setSpeed(v){
+  document.getElementById("sv").innerText = v;
+  fetch(`https://blynk.cloud/external/api/update?token=${token}&V0=${v}`);
+}
+
+function motorOn(){
+  fetch(`https://blynk.cloud/external/api/update?token=${token}&V1=1`);
+}
+
+function motorOff(){
+  fetch(`https://blynk.cloud/external/api/update?token=${token}&V1=0`);
+}
+
+function setStage(v){
+  fetch(`https://blynk.cloud/external/api/update?token=${token}&V3=${v}`);
+}
+
+// -------- LIVE DATA --------
+setInterval(() => {
+
+  fetch(`https://blynk.cloud/external/api/get?token=${token}&V5`)
+  .then(r=>r.text())
+  .then(data=>{
+    document.getElementById("v").innerText = data;
+
+    // Add to graph
+    voltageData.push(parseFloat(data));
+    labels.push("");
+
+    if(voltageData.length > 20){
+      voltageData.shift();
+      labels.shift();
+    }
+
+    chart.update();
+  });
+
+  fetch(`https://blynk.cloud/external/api/get?token=${token}&V6`)
+  .then(r=>r.text())
+  .then(data=> document.getElementById("s").innerText = data);
+
+  fetch(`https://blynk.cloud/external/api/get?token=${token}&V7`)
+  .then(r=>r.text())
+  .then(data=> document.getElementById("st").innerText = data);
+
+}, 1000);
+
+</script>
+
+</body>
+</html>
